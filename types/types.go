@@ -1,10 +1,10 @@
 package types
 
 import (
-	"github.com/segmentio/kafka-go"
+	"github.com/IBM/sarama"
 )
 
-var KafkaProducer *kafka.Writer
+var KafkaProducer sarama.SyncProducer
 var Config Configs
 
 type Configs struct {

@@ -1,15 +1,13 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
 	"kafka-golang/types"
 	"net/http"
 	"time"
 
+	"github.com/IBM/sarama"
 	"github.com/gin-gonic/gin"
-	"github.com/segmentio/kafka-go"
 )
 
 func HandleRoutes(incomingRouterGroup *gin.RouterGroup) {
@@ -37,15 +35,15 @@ func HandlePublishMessage(c *gin.Context) {
 		})
 		return
 	}
-	fmt.Println("types.Config.KafkaBrokerConfig.TopicConfigs.TopicKey", (types.Config.KafkaBrokerConfig.TopicConfigs))
-	fmt.Println(val)
-	err = types.KafkaProducer.WriteMessages(context.Background(), kafka.Message{
+	mes := &sarama.ProducerMessage{
+		Topic:     types.Config.KafkaBrokerConfig.TopicConfigs.Topic_Name,
+		Key:       sarama.StringEncoder(types.Config.KafkaBrokerConfig.TopicConfigs.TopicKey),
+		Value:     sarama.StringEncoder(val),
 		Partition: 0,
-		Key:       []byte(types.Config.KafkaBrokerConfig.TopicConfigs.TopicKey),
-		Value:     val,
-		Time:      time.Now(),
-	})
+		Timestamp: time.Now(),
+	}
 
+	partition, offset, err := types.KafkaProducer.SendMessage(mes)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"status":  http.StatusInternalServerError,
@@ -54,7 +52,9 @@ func HandlePublishMessage(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"status":  http.StatusOK,
-		"message": "Data published successfully",
+		"status":    http.StatusOK,
+		"message":   "Data published successfully",
+		"partition": partition,
+		"offset":    offset,
 	})
 }

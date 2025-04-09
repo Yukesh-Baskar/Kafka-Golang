@@ -7,8 +7,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/IBM/sarama"
 	"github.com/gin-gonic/gin"
-	"github.com/segmentio/kafka-go"
 	"gopkg.in/yaml.v3"
 )
 
@@ -22,7 +22,7 @@ func StartApp() {
 		log.Fatalf("Error while unmarshalling config yaml file data: %v", err)
 	}
 
-	types.KafkaProducer = ConnectProducer(types.Config.KafkaBrokerConfig.KafkaBrokerPorts)
+	types.KafkaProducer, err = ConnectProducer(types.Config.KafkaBrokerConfig.KafkaBrokerPorts)
 	if err != nil {
 		log.Fatalf("Error while connecting to producer with the given broken url's config: %v", err)
 	}
@@ -38,11 +38,13 @@ func StartApp() {
 		fmt.Printf("server running on PORT: %s\n", types.Config.App.Port)
 	}
 }
-func ConnectProducer(brokersUrl []string) *kafka.Writer {
-	return &kafka.Writer{
-		Addr:        kafka.TCP(types.Config.KafkaBrokerConfig.KafkaBrokerPorts...),
-		Topic:       types.Config.KafkaBrokerConfig.TopicConfigs.Topic_Name,
-		Balancer:    &kafka.LeastBytes{},
-		MaxAttempts: 5,
+func ConnectProducer(brokersUrl []string) (sarama.SyncProducer, error) {
+	config := sarama.NewConfig()
+	config.Producer.Return.Successes = true // Enable success notifications
+	// config.Version = sarama.V4_0_0_0        // Specify the Kafka version you're using
+	producer, err := sarama.NewSyncProducer(types.Config.KafkaBrokerConfig.KafkaBrokerPorts, config)
+	if err != nil {
+		return nil, err
 	}
+	return producer, nil
 }

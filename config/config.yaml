@@ -1,0 +1,9 @@
+App:
+  Port: ":6090"
+KafkaBrokerConfigs: 
+  KafkaBrokerPorts: 
+   - "localhost:9092"
+  TopicConfigs:
+    TopicKey: "user_info"
+    Topic_Name: "producer-event"
+    # Partitions: 2
